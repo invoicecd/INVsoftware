@@ -18,8 +18,6 @@
         input[type="text"].search-bar { background-color: #fffdec; border: 1px solid #e6db55; font-style: italic; }
         button { background-color: #000000; color: white; border: none; font-size: 16px; cursor: pointer; font-weight: bold; }
         button:hover { background-color: #222222; }
-        .export-csv-btn { background-color: #3498db; margin-top: 5px; }
-        .export-csv-btn:hover { background-color: #2980b9; }
         .medication-row { display: flex; gap: 10px; }
         .medication-row select { flex: 2; }
         .medication-row input[type="number"] { flex: 0.5; }
@@ -37,8 +35,6 @@
         .inv-col-right { flex: 1; text-align: right; font-size: 13px; line-height: 1.5; }
         .brand-title { font-size: 26px; font-weight: bold; margin: 0; color: #000; }
         .brand-sub { font-size: 12px; color: #555; margin: 2px 0 15px 0; letter-spacing: 0.5px; }
-        .dispensary-tag { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-top: 15px; }
-        .inv-number-main { font-size: 22px; font-weight: normal; margin: 0 0 5px 0; }
         .remit-box { background-color: #f9f9f9; padding: 15px; border-radius: 4px; text-align: left; display: inline-block; width: 280px; font-size: 12px; line-height: 1.4; margin-top: 15px; border: 1px solid #eee; }
         .remit-box strong { display: block; margin-bottom: 4px; }
         .remit-note { font-size: 11px; color: #666; margin-top: 8px; line-height: 1.3; border-top: 1px solid #e1e1e1; padding-top: 6px; }
@@ -54,9 +50,6 @@
         .total-label { width: 150px; text-align: left; color: #555; }
         .total-val { width: 100px; text-align: right; }
         .grand-total { font-size: 18px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px; margin-top: 5px; }
-        .gst-notice { font-size: 12px; color: #666; font-style: italic; margin-top: 15px; }
-        .invoice-footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; line-height: 1.5; color: #444; }
-        .footer-payment-block { display: flex; justify-content: space-between; margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 4px; }
         .print-trigger-btn { background-color: #27ae60; margin-top: 30px; padding: 15px; width: 100%; color: white; border: none; font-size: 16px; cursor: pointer; font-weight: bold; }
         @media print { @page { margin: 0; } body { background: white; margin: 0; padding: 40px; } .control-container, .print-trigger-btn { display: none !important; } #invoice-preview { display: block !important; border: none; padding: 0; width: 100%; } }
     </style>
@@ -70,12 +63,12 @@
         <div class="csv-box">
             <label>Load Raw Patients CSV</label>
             <input type="file" id="upload-patients" accept=".csv" onchange="loadRawPatientCSV(this)">
-            <span id="patient-count" class="status-msg" style="color:#7f8c8d;">No file loaded</span>
+            <span id="patient-count" class="status-msg">No file loaded</span>
         </div>
         <div class="csv-box">
             <label>Load Raw Medications CSV</label>
             <input type="file" id="upload-medications" accept=".csv" onchange="loadRawMedicationCSV(this)">
-            <span id="medication-count" class="status-msg" style="color:#7f8c8d;">No file loaded</span>
+            <span id="medication-count" class="status-msg">No file loaded</span>
         </div>
     </div>
     
@@ -116,7 +109,7 @@
     </div>
 
     <div class="form-group" style="background: #f1f2f6; padding: 15px; border-radius: 4px;">
-        <label for="invoice-discount" style="color: #2f3542;">3. Apply Account Credits / Adjustments ($)</label>
+        <label for="invoice-discount">3. Apply Account Credits ($)</label>
         <input type="number" id="invoice-discount" min="0" value="0.00" step="0.01">
     </div>
 
@@ -128,7 +121,6 @@
         <div class="inv-col-left">
             <div class="brand-title">Medicanna Health</div>
             <div class="brand-sub">ABN 19 641 207 132</div>
-            <div class="dispensary-tag">Cannabis Dispensary</div>
         </div>
         <div class="inv-col-right">
             <div class="inv-number-main" id="target-inv-id">Invoice #---</div>
@@ -150,10 +142,9 @@
     <div class="customer-section">
         <div class="customer-title">Customer</div>
         <div class="customer-name" id="cust-name">---</div>
-        <div id="cust-meta-1">---</div>
-        <div id="cust-email">---</div>
-        <div id="cust-phone">---</div>
-        <div id="cust-address" style="margin-top: 5px; font-weight: 500;">---</div>
+        <div id="cust-contact">---</div>
+        <div style="margin-top: 10px;"><strong>Delivery Address:</strong></div>
+        <div id="cust-address" style="font-weight: 500;">---</div>
     </div>
 
     <table class="invoice-table">
@@ -173,30 +164,13 @@
             <div class="total-label">Subtotal</div>
             <div class="total-val" id="summary-subtotal">$0.00</div>
         </div>
-        <div class="total-row" id="credit-row-display" style="display: none; color: #c0392b;">
-            <div class="total-label">Credits Applied</div>
+        <div class="total-row" id="credit-row" style="display: none;">
+            <div class="total-label">Applied Credits</div>
             <div class="total-val" id="summary-credits">-$0.00</div>
         </div>
         <div class="total-row grand-total">
             <div class="total-label">Total Due</div>
             <div class="total-val" id="summary-total">$0.00</div>
-        </div>
-    </div>
-
-    <div class="gst-notice">No GST has been charged.</div>
-
-    <div class="invoice-footer">
-        <strong>Cannabis Dispensary</strong><br>
-        Cannabis Dispensary is the dispensing arm of Medicanna Health.
-        
-        <div class="footer-payment-block">
-            <div>
-                <strong>Payment</strong><br>
-                Due: <span id="footer-due-date"></span>
-            </div>
-            <div style="text-align: right;">
-                <strong style="font-size: 16px;" id="footer-due-amount">$0.00</strong>
-            </div>
         </div>
     </div>
 
@@ -208,7 +182,7 @@
     let medicationDatabase = [];
     let activeManifest = [];
     let currentVisibleMedications = [];
-    let activeExportFileName = "Invoice";
+    let activeExportFileName = "Invoice"; // Initialize the variable
 
     function parseRobustCSV(text) {
         let lines = [];
@@ -236,46 +210,21 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const rawRows = parseRobustCSV(e.target.result);
-            if (rawRows.length === 0) return;
-            const headers = rawRows[0].map(h => h.trim());
-            const idxFirst = headers.indexOf('First Name');
-            const idxSurname = headers.indexOf('Surname');
-            const idxCompany = headers.indexOf('Company Name'); 
-            const idxEmail = headers.indexOf('Email Address');
-            const idxPhone = headers.indexOf('Phone Number');
-            const idxAddr1 = headers.indexOf('Street Address 1');
-            const idxAddr2 = headers.indexOf('Street Address 2');
-            const idxCity = headers.indexOf('City');
-            const idxState = headers.indexOf('State');
-            const idxPostal = headers.indexOf('Postal Code');
-
+            if (rawRows.length < 2) return;
             patientDatabase = [];
             for (let i = 1; i < rawRows.length; i++) {
                 const row = rawRows[i];
-                if (row.length <= 1 || !row[idxFirst]) continue;
-                let first = row[idxFirst].trim();
-                let surname = row[idxSurname] ? row[idxSurname].trim() : "";
-                let name = `${first} ${surname}`.trim();
-                if (!name || name.toLowerCase() === "nan") continue;
-
-                let info = row[idxCompany] ? row[idxCompany].trim() : "---";
-                let email = (row[idxEmail] && row[idxEmail].trim().toLowerCase() !== "nan") ? row[idxEmail].trim() : "---";
-                let phone = (row[idxPhone] && row[idxPhone].trim().toLowerCase() !== "nan") ? row[idxPhone].trim() : "---";
-                if (phone.startsWith("'")) phone = phone.substring(1);
-
-                let addrParts = [];
-                if (row[idxAddr1] && row[idxAddr1].trim()) addrParts.push(row[idxAddr1].trim());
-                if (row[idxAddr2] && row[idxAddr2].trim()) addrParts.push(row[idxAddr2].trim());
-                if (row[idxCity] && row[idxCity].trim()) addrParts.push(row[idxCity].trim());
-                if (row[idxState] && row[idxState].trim()) addrParts.push(row[idxState].trim());
-                if (row[idxPostal] && row[idxPostal].trim() && row[idxPostal].trim() !== "nan") addrParts.push(row[idxPostal].trim());
-                let address = addrParts.length > 0 ? addrParts.join(", ") : "---";
-
-                patientDatabase.push({ name, info, email, phone, address });
+                if (!row[1] && !row[2]) continue;
+                patientDatabase.push({ 
+                    name: `${row[1] || ""} ${row[2] || ""}`.trim(), 
+                    email: row[3] || "N/A", 
+                    phone: row[4] || "N/A", 
+                    dob: row[6] || "N/A",
+                    address: [row[7], row[8], row[9], row[10], row[11]].filter(p => p && p.trim() !== "").join(", ") 
+                });
             }
-            patientDatabase.sort((a, b) => a.name.localeCompare(b.name));
-            document.getElementById('patient-count').innerText = `Successfully parsed ${patientDatabase.length} records.`;
             renderPatientMenu(patientDatabase.map((p, i) => ({...p, originalIndex: i})));
+            document.getElementById('patient-count').innerText = `Loaded ${patientDatabase.length} patients`;
         };
         reader.readAsText(file);
     }
@@ -286,151 +235,121 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const rawRows = parseRobustCSV(e.target.result);
-            if (rawRows.length === 0) return;
-            const headers = rawRows[0].map(h => h.trim());
-            const idxName = headers.indexOf('Item Name');
-            const idxPrice = headers.indexOf('Price');
+            if (rawRows.length < 2) return;
             medicationDatabase = [];
             for (let i = 1; i < rawRows.length; i++) {
                 const row = rawRows[i];
-                if (row.length <= 1 || !row[idxName]) continue;
-                let price = parseFloat(row[idxPrice] ? row[idxPrice].trim() : "0.00");
-                medicationDatabase.push({ name: row[idxName].trim(), price: isNaN(price) ? 0 : price });
+                const name = row[1] ? row[1].trim() : "Unknown";
+                const priceRaw = row[21] ? row[21].replace(/[^0-9.]/g, '') : "0";
+                const price = parseFloat(priceRaw) || 0;
+                if(name !== "Unknown") medicationDatabase.push({ name, price });
             }
-            medicationDatabase.sort((a, b) => a.name.localeCompare(b.name));
-            currentVisibleMedications = medicationDatabase.map((m, i) => ({...m, originalIndex: i}));
-            document.getElementById('medication-count').innerText = `Successfully parsed ${medicationDatabase.length} entries.`;
-            renderMedicationMenu(currentVisibleMedications.slice(0, 10));
+            currentVisibleMedications = medicationDatabase;
+            renderMedicationMenu(currentVisibleMedications);
+            document.getElementById('medication-count').innerText = `Loaded ${medicationDatabase.length} items`;
         };
         reader.readAsText(file);
     }
 
     function searchPatients() {
         const query = document.getElementById('patient-search').value.toLowerCase();
-        const results = patientDatabase
-            .map((p, i) => ({...p, originalIndex: i}))
-            .filter(p => p.name.toLowerCase().includes(query))
-            .slice(0, 10);
+        const results = patientDatabase.map((p, i) => ({...p, originalIndex: i})).filter(p => p.name.toLowerCase().includes(query));
         renderPatientMenu(results);
     }
 
     function searchMedications() {
         const query = document.getElementById('medication-search').value.toLowerCase();
-        currentVisibleMedications = medicationDatabase
-            .map((m, i) => ({...m, originalIndex: i}))
-            .filter(m => m.name.toLowerCase().includes(query));
-        renderMedicationMenu(currentVisibleMedications.slice(0, 10));
+        currentVisibleMedications = medicationDatabase.filter(m => m.name.toLowerCase().includes(query));
+        renderMedicationMenu(currentVisibleMedications.map((m, i) => ({...m, originalIndex: i})));
     }
 
     function renderPatientMenu(dataset) {
         const select = document.getElementById('patient-select');
-        select.innerHTML = dataset.length === 0 ? '<option value="">No matching patient found</option>' : '<option value="">-- Select Profile --</option>';
-        dataset.forEach((p) => {
-            let displayText = `${p.name}`;
-            if (p.info && p.info !== '---') displayText += ` (${p.info})`;
-            select.innerHTML += `<option value='${p.originalIndex}'>${displayText}</option>`;
+        select.innerHTML = '<option value="">-- Select Profile --</option>';
+        dataset.forEach(p => {
+            let cleanDob = p.dob && p.dob !== "N/A" ? p.dob.replace(/^dob:\s*/i, '') : "";
+            let dobLabel = cleanDob ? ` (DOB: ${cleanDob})` : "";
+            select.innerHTML += `<option value='${p.originalIndex}'>${p.name}${dobLabel}</option>`;
         });
     }
 
     function renderMedicationMenu(dataset) {
         const select = document.getElementById('medication-select');
-        select.innerHTML = dataset.length === 0 ? '<option value="">No matches found</option>' : '<option value="">-- Select Item --</option>';
-        dataset.forEach((m) => {
-            select.innerHTML += `<option value="${m.originalIndex}">${m.name} ($${m.price.toFixed(2)})</option>`;
-        });
+        select.innerHTML = '<option value="">-- Select Item --</option>';
+        dataset.forEach((m, i) => select.innerHTML += `<option value="${i}">${m.name} ($${m.price.toFixed(2)})</option>`);
     }
 
     function addSelectedMedication() {
-        const medIdx = document.getElementById('medication-select').value;
-        if (medIdx === "") return;
-        const item = medicationDatabase[parseInt(medIdx)];
-        const qty = parseInt(document.getElementById('medication-qty').value);
-        activeManifest.push({ description: item.name, rate: item.price, quantity: qty });
+        const idx = document.getElementById('medication-select').value;
+        if(idx === "") return;
+        const item = currentVisibleMedications[parseInt(idx)];
+        activeManifest.push({ description: item.name, rate: item.price, quantity: parseInt(document.getElementById('medication-qty').value) });
         renderSelectedList();
     }
 
     function addManualItem() {
         const name = document.getElementById('manual-name').value;
         const price = parseFloat(document.getElementById('manual-price').value);
-        const qty = parseInt(document.getElementById('manual-qty').value);
         if(!name || isNaN(price)) return;
-        activeManifest.push({ description: name, rate: price, quantity: qty });
-        renderSelectedList();
-        document.getElementById('manual-name').value = '';
-        document.getElementById('manual-price').value = '';
-    }
-
-    function removeManifestIndex(targetIndex) {
-        activeManifest.splice(targetIndex, 1);
+        activeManifest.push({ description: name, rate: price, quantity: parseInt(document.getElementById('manual-qty').value) });
         renderSelectedList();
     }
 
     function renderSelectedList() {
         const container = document.getElementById('selected-items-list');
-        container.innerHTML = '';
-        activeManifest.forEach((element, idx) => {
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'item-list-row';
-            rowDiv.innerHTML = `
-                <input type="text" value="${element.description} (x${element.quantity}) - $${(element.rate * element.quantity).toFixed(2)}" disabled>
-                <button type="button" onclick="removeManifestIndex(${idx})">Remove</button>
-            `;
-            container.appendChild(rowDiv);
-        });
+        container.innerHTML = activeManifest.map((item, i) => 
+            `<div class='item-list-row'><input type="text" value="${item.description} x${item.quantity} - $${(item.rate*item.quantity).toFixed(2)}" disabled><button onclick="activeManifest.splice(${i},1);renderSelectedList()">Remove</button></div>`
+        ).join('');
     }
 
     function buildInvoiceLayout() {
-        const patientIdx = document.getElementById('patient-select').value;
-        if (patientIdx === "") return alert('Select a patient profile.');
-        if (activeManifest.length === 0) return alert('Assign prescription items first.');
-
-        const patient = patientDatabase[parseInt(patientIdx)];
-        const credits = parseFloat(document.getElementById('invoice-discount').value) || 0;
-        const invNum = document.getElementById('manual-invoice-num').value || "---";
-        const todayFormatted = new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+        const pIdx = document.getElementById('patient-select').value;
+        if(pIdx === "") return alert('Select patient');
+        const p = patientDatabase[pIdx];
+        const invNum = document.getElementById('manual-invoice-num').value;
         
-        document.getElementById('cust-name').innerText = patient.name;
-        document.getElementById('cust-meta-1').innerText = patient.info;
-        document.getElementById('cust-email').innerText = patient.email;
-        document.getElementById('cust-phone').innerText = patient.phone;
-        document.getElementById('cust-address').innerText = 'Delivery Address: ' + patient.address;
+        let dobDisplay = p.dob || "N/A";
+        if (dobDisplay.toLowerCase().startsWith("dob:")) {
+            dobDisplay = dobDisplay.substring(4).trim();
+        }
         
+        document.getElementById('cust-name').innerText = p.name;
+        document.getElementById('cust-contact').innerHTML = `Email: ${p.email}<br>Phone: ${p.phone}<br>DOB: ${dobDisplay}`;
+        document.getElementById('cust-address').innerText = p.address || "N/A";
         document.getElementById('target-inv-id').innerText = `Invoice #${invNum}`;
-        document.getElementById('target-date').innerText = todayFormatted;
-        document.getElementById('footer-due-date').innerText = todayFormatted;
-
-        activeExportFileName = `${invNum} - ${patient.name}`;
-
-        const dynamicBody = document.getElementById('invoice-items-body');
-        dynamicBody.innerHTML = '';
+        const currentDateStr = new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+        document.getElementById('target-date').innerText = currentDateStr;
         
+        // Update the activeExportFileName
+        activeExportFileName = `${invNum} - ${p.name} - ${currentDateStr}`;
+
         let subtotal = 0;
-        activeManifest.forEach(lineItem => {
-            const extendedSum = lineItem.rate * lineItem.quantity;
-            subtotal += extendedSum;
-            dynamicBody.innerHTML += `<tr><td>${lineItem.description}</td><td class="num-col">${lineItem.quantity}</td><td class="num-col">$${lineItem.rate.toFixed(2)}</td><td class="num-col">$${extendedSum.toFixed(2)}</td></tr>`;
-        });
-
-        let finalTotalDue = Math.max(0, subtotal - credits);
-
+        const body = document.getElementById('invoice-items-body');
+        body.innerHTML = activeManifest.map(item => {
+            subtotal += item.rate * item.quantity;
+            return `<tr><td>${item.description}</td><td class="num-col">${item.quantity}</td><td class="num-col">$${item.rate.toFixed(2)}</td><td class="num-col">$${(item.rate*item.quantity).toFixed(2)}</td></tr>`;
+        }).join('');
+        
+        const credits = parseFloat(document.getElementById('invoice-discount').value) || 0;
         document.getElementById('summary-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+        
         if (credits > 0) {
-            document.getElementById('credit-row-display').style.display = 'flex';
+            document.getElementById('credit-row').style.display = 'flex';
             document.getElementById('summary-credits').innerText = `-$${credits.toFixed(2)}`;
         } else {
-            document.getElementById('credit-row-display').style.display = 'none';
+            document.getElementById('credit-row').style.display = 'none';
         }
-
-        document.getElementById('summary-total').innerText = `$${finalTotalDue.toFixed(2)}`;
-        document.getElementById('footer-due-amount').innerText = `$${finalTotalDue.toFixed(2)}`;
+        
+        document.getElementById('summary-total').innerText = `$${Math.max(0, subtotal - credits).toFixed(2)}`;
         document.getElementById('invoice-preview').style.display = 'block';
-        window.scrollTo(0, document.getElementById('invoice-preview').offsetTop);
     }
 
-    function executeSystemExport() {
+    function executeSystemExport() { 
+        // Temporarily change the document title for the print dialog
         const originalTitle = document.title;
         document.title = activeExportFileName;
-        window.print();
+        window.print(); 
+        // Restore the original title
         document.title = originalTitle;
     }
 </script>
