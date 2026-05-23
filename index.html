@@ -28,6 +28,7 @@
         .item-list-row input { flex: 4; margin-bottom: 0; }
         .item-list-row button { flex: 1; background-color: #c0392b; margin-bottom: 0; }
         .status-msg { font-size: 12px; color: #27ae60; font-weight: bold; margin-top: 2px; display: block; }
+        .error-text { color: #e74c3c; font-size: 13px; font-weight: bold; margin-bottom: 10px; }
         
         #invoice-preview { max-width: 850px; background: #fff; padding: 50px; margin: 0 auto; box-sizing: border-box; display: none; border: 1px solid #ddd; }
         .inv-row { display: flex; justify-content: space-between; margin-bottom: 30px; }
@@ -62,12 +63,12 @@
     <div class="csv-flex">
         <div class="csv-box">
             <label>Load Raw Patients CSV</label>
-            <input type="file" id="upload-patients" accept=".csv" onchange="loadRawPatientCSV(this)">
+            <input type="file" id="upload-patients" accept=".csv, text/csv, text/plain, application/vnd.ms-excel, application/octet-stream" onchange="loadRawPatientCSV(this)">
             <span id="patient-count" class="status-msg">No file loaded</span>
         </div>
         <div class="csv-box">
             <label>Load Raw Medications CSV</label>
-            <input type="file" id="upload-medications" accept=".csv" onchange="loadRawMedicationCSV(this)">
+            <input type="file" id="upload-medications" accept=".csv, text/csv, text/plain, application/vnd.ms-excel, application/octet-stream" onchange="loadRawMedicationCSV(this)">
             <span id="medication-count" class="status-msg">No file loaded</span>
         </div>
     </div>
@@ -113,6 +114,7 @@
         <input type="number" id="invoice-discount" min="0" value="0.00" step="0.01">
     </div>
 
+    <div id="form-error" class="error-text"></div>
     <button type="button" onclick="buildInvoiceLayout()">Compile Professional Invoice</button>
 </div>
 
@@ -182,35 +184,61 @@
     let medicationDatabase = [];
     let activeManifest = [];
     let currentVisibleMedications = [];
-    let activeExportFileName = "Invoice"; // Initialize the variable
+    let activeExportFileName = "Invoice"; 
 
     function parseRobustCSV(text) {
-        let lines = [];
-        let row = [""];
-        let inQuotes = false;
-        for (let i = 0; i < text.length; i++) {
-            let c = text[i];
-            let next = text[i+1];
-            if (c === '"') {
-                if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; } 
-                else { inQuotes = !inQuotes; }
-            } else if (c === ',' && !inQuotes) { row.push(''); } 
-            else if ((c === '\r' || c === '\n') && !inQuotes) {
-                if (c === '\r' && next === '\n') i++;
-                lines.push(row); row = [''];
-            } else { row[row.length - 1] += c; }
+        const lines = text.split(/\r?\n/);
+        const rows = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            if (!line.trim()) continue;
+            
+            let currentRow = [];
+            let currentCell = '';
+            let inQuotes = false;
+            
+            for (let j = 0; j < line.length; j++) {
+                const c = line[j];
+                if (c === '"') {
+                    if (inQuotes && line[j + 1] === '"') {
+                        currentCell += '"';
+                        j++; 
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (c === ',' && !inQuotes) {
+                    currentRow.push(currentCell);
+                    currentCell = '';
+                } else {
+                    currentCell += c;
+                }
+            }
+            
+            // Force reset quotes at end of line to prevent runaway formatting breaking the entire file
+            if (inQuotes) {
+                inQuotes = false;
+            }
+            
+            currentRow.push(currentCell);
+            rows.push(currentRow);
         }
-        if (row.length > 1 || row[0] !== '') lines.push(row);
-        return lines;
+        return rows;
     }
 
     function loadRawPatientCSV(input) {
         const file = input.files[0];
         if (!file) return;
+        document.getElementById('patient-count').innerText = "Loading data...";
+        document.getElementById('patient-count').style.color = "#f39c12";
         const reader = new FileReader();
         reader.onload = function(e) {
             const rawRows = parseRobustCSV(e.target.result);
-            if (rawRows.length < 2) return;
+            if (rawRows.length < 2) {
+                document.getElementById('patient-count').innerText = "Error: File appears invalid or empty.";
+                document.getElementById('patient-count').style.color = "#e74c3c";
+                return;
+            }
             patientDatabase = [];
             for (let i = 1; i < rawRows.length; i++) {
                 const row = rawRows[i];
@@ -225,6 +253,7 @@
             }
             renderPatientMenu(patientDatabase.map((p, i) => ({...p, originalIndex: i})));
             document.getElementById('patient-count').innerText = `Loaded ${patientDatabase.length} patients`;
+            document.getElementById('patient-count').style.color = "#27ae60";
         };
         reader.readAsText(file);
     }
@@ -232,10 +261,16 @@
     function loadRawMedicationCSV(input) {
         const file = input.files[0];
         if (!file) return;
+        document.getElementById('medication-count').innerText = "Loading data...";
+        document.getElementById('medication-count').style.color = "#f39c12";
         const reader = new FileReader();
         reader.onload = function(e) {
             const rawRows = parseRobustCSV(e.target.result);
-            if (rawRows.length < 2) return;
+            if (rawRows.length < 2) {
+                document.getElementById('medication-count').innerText = "Error: File appears invalid or empty.";
+                document.getElementById('medication-count').style.color = "#e74c3c";
+                return;
+            }
             medicationDatabase = [];
             for (let i = 1; i < rawRows.length; i++) {
                 const row = rawRows[i];
@@ -247,6 +282,7 @@
             currentVisibleMedications = medicationDatabase;
             renderMedicationMenu(currentVisibleMedications);
             document.getElementById('medication-count').innerText = `Loaded ${medicationDatabase.length} items`;
+            document.getElementById('medication-count').style.color = "#27ae60";
         };
         reader.readAsText(file);
     }
@@ -303,8 +339,19 @@
     }
 
     function buildInvoiceLayout() {
+        document.getElementById('form-error').innerText = "";
         const pIdx = document.getElementById('patient-select').value;
-        if(pIdx === "") return alert('Select patient');
+        
+        if (pIdx === "") {
+            document.getElementById('form-error').innerText = "Please select a patient profile first.";
+            return;
+        }
+        
+        if (activeManifest.length === 0) {
+            document.getElementById('form-error').innerText = "Please add at least one medication to the manifest.";
+            return;
+        }
+
         const p = patientDatabase[pIdx];
         const invNum = document.getElementById('manual-invoice-num').value;
         
