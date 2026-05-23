@@ -71,7 +71,6 @@
             <label>Load Raw Patients CSV</label>
             <input type="file" id="upload-patients" accept=".csv" onchange="loadRawPatientCSV(this)">
             <span id="patient-count" class="status-msg" style="color:#7f8c8d;">No file loaded</span>
-            <button type="button" id="download-sorted-btn" class="export-csv-btn" onclick="exportSortedCSV()" style="display:none;">Download Sorted CSV</button>
         </div>
         <div class="csv-box">
             <label>Load Raw Medications CSV</label>
@@ -276,7 +275,6 @@
             }
             patientDatabase.sort((a, b) => a.name.localeCompare(b.name));
             document.getElementById('patient-count').innerText = `Successfully parsed ${patientDatabase.length} records.`;
-            document.getElementById('download-sorted-btn').style.display = 'block';
             renderPatientMenu(patientDatabase.map((p, i) => ({...p, originalIndex: i})));
         };
         reader.readAsText(file);
@@ -309,7 +307,6 @@
 
     function searchPatients() {
         const query = document.getElementById('patient-search').value.toLowerCase();
-        // Use map to preserve the original index for lookups
         const results = patientDatabase
             .map((p, i) => ({...p, originalIndex: i}))
             .filter(p => p.name.toLowerCase().includes(query))
@@ -331,7 +328,6 @@
         dataset.forEach((p) => {
             let displayText = `${p.name}`;
             if (p.info && p.info !== '---') displayText += ` (${p.info})`;
-            // Store original index in value to ensure accurate retrieval
             select.innerHTML += `<option value='${p.originalIndex}'>${displayText}</option>`;
         });
     }
