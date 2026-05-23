@@ -28,7 +28,6 @@
         .item-list-row input { flex: 4; margin-bottom: 0; }
         .item-list-row button { flex: 1; background-color: #c0392b; margin-bottom: 0; }
         .status-msg { font-size: 12px; color: #27ae60; font-weight: bold; margin-top: 2px; display: block; }
-        .error-text { color: #e74c3c; font-size: 13px; font-weight: bold; margin-bottom: 10px; }
         
         #invoice-preview { max-width: 850px; background: #fff; padding: 50px; margin: 0 auto; box-sizing: border-box; display: none; border: 1px solid #ddd; }
         .inv-row { display: flex; justify-content: space-between; margin-bottom: 30px; }
@@ -36,9 +35,6 @@
         .inv-col-right { flex: 1; text-align: right; font-size: 13px; line-height: 1.5; }
         .brand-title { font-size: 26px; font-weight: bold; margin: 0; color: #000; }
         .brand-sub { font-size: 12px; color: #555; margin: 2px 0 15px 0; letter-spacing: 0.5px; }
-        .remit-box { background-color: #f9f9f9; padding: 15px; border-radius: 4px; text-align: left; display: inline-block; width: 280px; font-size: 12px; line-height: 1.4; margin-top: 15px; border: 1px solid #eee; }
-        .remit-box strong { display: block; margin-bottom: 4px; }
-        .remit-note { font-size: 11px; color: #666; margin-top: 8px; line-height: 1.3; border-top: 1px solid #e1e1e1; padding-top: 6px; }
         .customer-section { margin-bottom: 30px; font-size: 13px; line-height: 1.5; }
         .customer-title { font-size: 12px; text-transform: uppercase; color: #777; font-weight: bold; margin-bottom: 5px; }
         .customer-name { font-size: 18px; font-weight: bold; margin: 0 0 5px 0; }
@@ -51,6 +47,9 @@
         .total-label { width: 150px; text-align: left; color: #555; }
         .total-val { width: 100px; text-align: right; }
         .grand-total { font-size: 18px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px; margin-top: 5px; }
+        
+        .payment-advice { margin-top: 15px; padding: 12px; background: #f8f9fa; border: 1px solid #eee; font-size: 11px; text-align: left; line-height: 1.4; border-radius: 4px; }
+        
         .print-trigger-btn { background-color: #27ae60; margin-top: 30px; padding: 15px; width: 100%; color: white; border: none; font-size: 16px; cursor: pointer; font-weight: bold; }
         @media print { @page { margin: 0; } body { background: white; margin: 0; padding: 40px; } .control-container, .print-trigger-btn { display: none !important; } #invoice-preview { display: block !important; border: none; padding: 0; width: 100%; } }
     </style>
@@ -63,12 +62,12 @@
     <div class="csv-flex">
         <div class="csv-box">
             <label>Load Raw Patients CSV</label>
-            <input type="file" id="upload-patients" accept=".csv, text/csv, text/plain, application/vnd.ms-excel, application/octet-stream" onchange="loadRawPatientCSV(this)">
+            <input type="file" id="upload-patients" accept=".csv" onchange="loadRawPatientCSV(this)">
             <span id="patient-count" class="status-msg">No file loaded</span>
         </div>
         <div class="csv-box">
             <label>Load Raw Medications CSV</label>
-            <input type="file" id="upload-medications" accept=".csv, text/csv, text/plain, application/vnd.ms-excel, application/octet-stream" onchange="loadRawMedicationCSV(this)">
+            <input type="file" id="upload-medications" accept=".csv" onchange="loadRawMedicationCSV(this)">
             <span id="medication-count" class="status-msg">No file loaded</span>
         </div>
     </div>
@@ -114,7 +113,6 @@
         <input type="number" id="invoice-discount" min="0" value="0.00" step="0.01">
     </div>
 
-    <div id="form-error" class="error-text"></div>
     <button type="button" onclick="buildInvoiceLayout()">Compile Professional Invoice</button>
 </div>
 
@@ -125,18 +123,16 @@
             <div class="brand-sub">ABN 19 641 207 132</div>
         </div>
         <div class="inv-col-right">
-            <div class="inv-number-main" id="target-inv-id">Invoice #---</div>
+            <div class="inv-number-main" id="target-inv-id" style="font-weight: bold; font-size: 16px;">Invoice #---</div>
             <div><strong>Issue date:</strong> <span id="target-date"></span></div>
             
-            <div class="remit-box">
-                <strong>Kindly remit payment to:</strong>
+            <div class="payment-advice">
+                <p><strong>Kindly remit payment to:</strong><br>
                 Cannabis Dispensary<br>
                 Westpac Bank<br>
                 BSB 033 161<br>
-                Account no: 338 361
-                <div class="remit-note">
-                    Note: we do not currently accept online credit card payment for medication orders. Please remit the payment to our Westpac bank account and reference the Invoice number. Thank you.
-                </div>
+                Account no: 338 361</p>
+                <p style="margin-top: 8px;"><em>Note: we do not currently accept online credit card payment for medication orders. Please remit the payment to our Westpac bank account and reference the Invoice number. Thank you.</em></p>
             </div>
         </div>
     </div>
@@ -184,61 +180,35 @@
     let medicationDatabase = [];
     let activeManifest = [];
     let currentVisibleMedications = [];
-    let activeExportFileName = "Invoice"; 
+    let activeExportFileName = "Invoice";
 
     function parseRobustCSV(text) {
-        const lines = text.split(/\r?\n/);
-        const rows = [];
-        
-        for (let i = 0; i < lines.length; i++) {
-            let line = lines[i];
-            if (!line.trim()) continue;
-            
-            let currentRow = [];
-            let currentCell = '';
-            let inQuotes = false;
-            
-            for (let j = 0; j < line.length; j++) {
-                const c = line[j];
-                if (c === '"') {
-                    if (inQuotes && line[j + 1] === '"') {
-                        currentCell += '"';
-                        j++; 
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (c === ',' && !inQuotes) {
-                    currentRow.push(currentCell);
-                    currentCell = '';
-                } else {
-                    currentCell += c;
-                }
-            }
-            
-            // Force reset quotes at end of line to prevent runaway formatting breaking the entire file
-            if (inQuotes) {
-                inQuotes = false;
-            }
-            
-            currentRow.push(currentCell);
-            rows.push(currentRow);
+        let lines = [];
+        let row = [""];
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            let c = text[i];
+            let next = text[i+1];
+            if (c === '"') {
+                if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; } 
+                else { inQuotes = !inQuotes; }
+            } else if (c === ',' && !inQuotes) { row.push(''); } 
+            else if ((c === '\r' || c === '\n') && !inQuotes) {
+                if (c === '\r' && next === '\n') i++;
+                lines.push(row); row = [''];
+            } else { row[row.length - 1] += c; }
         }
-        return rows;
+        if (row.length > 1 || row[0] !== '') lines.push(row);
+        return lines;
     }
 
     function loadRawPatientCSV(input) {
         const file = input.files[0];
         if (!file) return;
-        document.getElementById('patient-count').innerText = "Loading data...";
-        document.getElementById('patient-count').style.color = "#f39c12";
         const reader = new FileReader();
         reader.onload = function(e) {
             const rawRows = parseRobustCSV(e.target.result);
-            if (rawRows.length < 2) {
-                document.getElementById('patient-count').innerText = "Error: File appears invalid or empty.";
-                document.getElementById('patient-count').style.color = "#e74c3c";
-                return;
-            }
+            if (rawRows.length < 2) return;
             patientDatabase = [];
             for (let i = 1; i < rawRows.length; i++) {
                 const row = rawRows[i];
@@ -253,7 +223,6 @@
             }
             renderPatientMenu(patientDatabase.map((p, i) => ({...p, originalIndex: i})));
             document.getElementById('patient-count').innerText = `Loaded ${patientDatabase.length} patients`;
-            document.getElementById('patient-count').style.color = "#27ae60";
         };
         reader.readAsText(file);
     }
@@ -261,16 +230,10 @@
     function loadRawMedicationCSV(input) {
         const file = input.files[0];
         if (!file) return;
-        document.getElementById('medication-count').innerText = "Loading data...";
-        document.getElementById('medication-count').style.color = "#f39c12";
         const reader = new FileReader();
         reader.onload = function(e) {
             const rawRows = parseRobustCSV(e.target.result);
-            if (rawRows.length < 2) {
-                document.getElementById('medication-count').innerText = "Error: File appears invalid or empty.";
-                document.getElementById('medication-count').style.color = "#e74c3c";
-                return;
-            }
+            if (rawRows.length < 2) return;
             medicationDatabase = [];
             for (let i = 1; i < rawRows.length; i++) {
                 const row = rawRows[i];
@@ -282,7 +245,6 @@
             currentVisibleMedications = medicationDatabase;
             renderMedicationMenu(currentVisibleMedications);
             document.getElementById('medication-count').innerText = `Loaded ${medicationDatabase.length} items`;
-            document.getElementById('medication-count').style.color = "#27ae60";
         };
         reader.readAsText(file);
     }
@@ -339,19 +301,8 @@
     }
 
     function buildInvoiceLayout() {
-        document.getElementById('form-error').innerText = "";
         const pIdx = document.getElementById('patient-select').value;
-        
-        if (pIdx === "") {
-            document.getElementById('form-error').innerText = "Please select a patient profile first.";
-            return;
-        }
-        
-        if (activeManifest.length === 0) {
-            document.getElementById('form-error').innerText = "Please add at least one medication to the manifest.";
-            return;
-        }
-
+        if(pIdx === "") return alert('Please select a patient first.');
         const p = patientDatabase[pIdx];
         const invNum = document.getElementById('manual-invoice-num').value;
         
@@ -367,7 +318,6 @@
         const currentDateStr = new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
         document.getElementById('target-date').innerText = currentDateStr;
         
-        // Update the activeExportFileName
         activeExportFileName = `${invNum} - ${p.name} - ${currentDateStr}`;
 
         let subtotal = 0;
@@ -392,11 +342,9 @@
     }
 
     function executeSystemExport() { 
-        // Temporarily change the document title for the print dialog
         const originalTitle = document.title;
         document.title = activeExportFileName;
         window.print(); 
-        // Restore the original title
         document.title = originalTitle;
     }
 </script>
